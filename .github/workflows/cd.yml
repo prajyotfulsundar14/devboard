@@ -1,41 +1,28 @@
-# Goal -  Once successfully ci workflow passes, I have to deploy the application to production environment
+# Goal: To deploy the built images from CI Steps once the CI Worklow is Succeeded
 
 name: CD
-on:
-    workflow_run:
-        workflows: ["CI"]
-        types: [completed]
-        branches: 
-            - advanced
-    workflow_dispatch:
+
+on: 
+    workflow_call:
 
 jobs:
     deploy:
-        if: github.event.workflow_run.conclusion == 'success'
+        
         runs-on: self-hosted
         steps:
-            - name: Checkout code
+            - name: Code Checkout
               uses: actions/checkout@v7
 
-            - name: Copy Example env file to env file
+            - name: Copy Example Env to main env
               run: cp .env.example .env
-            
+
             - name: Docker Setup [Login]
               uses: docker/login-action@v4
               with:
                 username: ${{ vars.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_TOKEN }}
-            
-            - name: Deploy the container to Docker Compose
+
+            - name: Deploy the containers with Docker Compose
               run: |
-                if command -v docker-compose >/dev/null 2>&1; then
-                  docker-compose pull
-                  docker-compose up -d
-                elif docker compose version >/dev/null 2>&1; then
-                  docker compose pull
-                  docker compose up -d
-                else
-                  echo 'Docker Compose is not installed on this runner.'
-                  docker --help
-                  exit 1
-                fi
+                docker compose pull
+                docker compose up -d
