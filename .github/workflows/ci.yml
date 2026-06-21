@@ -4,10 +4,13 @@ name: CI
 
 on: 
     push:
-        branches: [master]
+        # paths:
+          # - '**'
+          # - '!.github/workflows/**'
+        branches: [feat/matrix-docker-build]
 
 jobs:
-    frontend:
+    lint-frontend:
         # Github runner
         runs-on: ubuntu-latest
         steps:
@@ -33,20 +36,8 @@ jobs:
               run: npm run test 
               working-directory: frontend
             
-            - name: Docker Setup [Login]
-              uses: docker/login-action@v4
-              with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-            - name: Docker Build and Push
-              uses: docker/build-push-action@v7
-              with:
-                context: ./frontend
-                push: true
-                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
                 
-    backend:
+    lint-backend:
         # Github runner
         runs-on: ubuntu-latest
         steps:
@@ -71,20 +62,33 @@ jobs:
             - name: Run Tests
               run: go test 
               working-directory: backend
-            
+          
+
+    build-and-push:
+        needs: [lint-frontend,lint-backend] 
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            folder: ['frontend','backend']
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
             - name: Docker Setup [Login]
               uses: docker/login-action@v4
               with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
 
             - name: Docker Build and Push
               uses: docker/build-push-action@v7
               with:
-                context: ./backend
+                context: ./${{ matrix.folder}}
                 push: true
-                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
+                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.folder}}:latest
+          
+
     deploy:
-        needs: [frontend,backend]
+        needs: [lint-frontend,lint-backend,build-and-push]
         uses: ./.github/workflows/cd.yml
         secrets: inherit
