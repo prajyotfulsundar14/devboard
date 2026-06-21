@@ -4,10 +4,10 @@ name: CI
 
 on: 
     push:
-        paths:
-          - '**'
-          - '!.github/workflows/**'
-        branches: [feat/matrix-docker-build]
+        # paths:
+        #   - '**'
+        #   - '!.github/workflows/**'
+        branches: [testbranch]
 
 jobs:
     lint-frontend:
