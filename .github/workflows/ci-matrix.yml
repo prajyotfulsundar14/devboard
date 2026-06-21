@@ -7,7 +7,7 @@ on:
         paths:
           - '**'
           - '!.github/workflows/**'
-        branches: [advanced]
+        branches: [master, advanced]
     schedule:
       - cron: "*/5 * * * *"
 
