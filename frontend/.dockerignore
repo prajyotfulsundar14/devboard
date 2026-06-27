@@ -1,4 +1,10 @@
-node_modules
-dist
-.git
-.DS_Store
+# Exclude node_modules, build artifacts, and git from the Docker build context
+node_modules/
+dist/
+.git/
+.gitignore
+.env
+.env.local
+.npm
+npm-debug.log
+yarn-error.log
