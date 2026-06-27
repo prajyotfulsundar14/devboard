@@ -1,16 +1,27 @@
 # Stage 1 — build the app into static files
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
+FROM dhi.io/node:22-debian13-dev AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npm run build
 
-# Stage 2 — small image that only serves the build (no nginx)
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-WORKDIR /app
-RUN npm install -g vite@5.4.11 && npm cache clean --force
-COPY --from=build /app/dist ./dist
+# Stage 1b — resolve the preview-server dependency in isolation (still has npm here)
+WORKDIR /runtime
 COPY vite.preview.config.js ./vite.config.js
+RUN npm init -y && \
+    npm install --omit=dev vite@5.4.11 && \
+    npm cache clean --force && \
+    find . -type f -name "*.md" -delete
+
+# Stage 2 — minimal runtime, no shell, no package manager
+FROM dhi.io/node:22-debian13
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /runtime ./
+
 EXPOSE 4173
-CMD ["vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+
+# Exec form for proper signal handling
+ENTRYPOINT ["node", "--no-warnings", "./node_modules/.bin/vite"]
+CMD ["preview", "--host", "0.0.0.0", "--port", "4173"]
