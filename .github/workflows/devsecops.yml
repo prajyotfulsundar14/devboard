@@ -8,7 +8,8 @@ on:
 
 jobs:
 
-    # Code Stage (with Shift left)
+    ## ---- CI ----
+    # Code Stage 
     code-quality:
         uses: ./.github/workflows/code-quality.yml
 
@@ -18,22 +19,30 @@ jobs:
 
     # Dependency Checks
     dependency-checks:
-        uses: ./.github/workflows/dependancy-scan.yml
+        uses: ./.github/workflows/dependency-scan.yml
 
     # Docker Checks
     docker-checks:
         uses: ./.github/workflows/docker-scans.yml
-        secrets: inherit
-    # SonarQube Checks
-    sonar-scans:
-        uses: ./.github/workflows/sonar-scans.yml
+        secrets: inherit 
+
+    # SonarQube
+    sonar-qube:
+        uses: ./.github/workflows/sonar-scan.yml
         secrets: inherit
 
-    # code tests
+    # Code Tests
     code-tests:
         uses: ./.github/workflows/code-tests.yml
-        secrets: inherit
-    # Docker Push
+
+    # push-to-docker-hub:
     docker-push:
-        needs: [code-quality, secret-scanning, dependency-checks, docker-checks, sonar-scans, code-tests]
         uses: ./.github/workflows/docker-push.yml
+        needs: [code-quality,code-tests,sonar-qube,docker-checks,dependency-checks,secret-scanning]
+        secrets: inherit
+
+    ## ---- CD -----
+    deploy:
+        needs: [docker-push]
+        uses: ./.github/workflows/deploy.yml
+        secrets: inherit
