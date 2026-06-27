@@ -28,10 +28,6 @@ jobs:
                 cache: npm
                 cache-dependency-path: frontend/package-lock.json
 
-            - name: Install npm Packages
-              run: npm install
-              working-directory: frontend
-
             - name: Run Npm Audit
               run: npm audit
               working-directory: frontend
