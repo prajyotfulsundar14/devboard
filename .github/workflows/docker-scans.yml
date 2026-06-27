@@ -1,0 +1,20 @@
+
+
+name: Docker scan
+on: 
+    workflow_call:
+jobs:
+    docker-file-lint-and-scan:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: 
+                dockerfile: ['backend','frontend']
+        steps:
+            - name: Code Checkout
+              uses: actions/checkout@v7
+
+            - name: Dockerfile Linting
+              uses: hadolint/hadolint-action@v3
+              with:
+                dockerfile: ./${{ matrix.dockerfile }}/Dockerfile
