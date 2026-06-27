@@ -1,34 +1,16 @@
 # Stage 1 — build the app into static files
-FROM node:20-alpine AS build
-
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
 WORKDIR /app
-
-# Copy dependency files and install (cache layer)
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
-
-# Copy source and build
 COPY . .
 RUN npm run build
 
-# Stage 2 — minimal runtime for serving built dist
-FROM node:20-alpine
-
+# Stage 2 — small image that only serves the build (no nginx)
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 WORKDIR /app
-
-# Install vite globally for preview server
-RUN npm install -g vite@5 && npm cache clean --force
-
-# Copy only built dist from builder stage
+RUN npm install -g vite@5.4.11 && npm cache clean --force
 COPY --from=build /app/dist ./dist
-
-# Copy config for preview
 COPY vite.preview.config.js ./vite.config.js
-
-# Create non-root user
-RUN adduser -D -u 10001 appuser
-USER appuser
-
 EXPOSE 4173
-
 CMD ["vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
