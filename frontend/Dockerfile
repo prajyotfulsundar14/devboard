@@ -1,27 +1,41 @@
-# Stage 1 — build the app into static files
-FROM dhi.io/node:22-debian13-dev AS build
+# Stage 1 — build the app and prepare production dependencies
+FROM dhi.io/node:26-dev AS build
+
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+
+RUN npm install --legacy-peer-deps
+
 COPY . .
+
 RUN npm run build
 
-# Stage 1b — resolve the preview-server dependency in isolation (still has npm here)
-WORKDIR /runtime
-COPY vite.preview.config.js ./vite.config.js
-RUN npm init -y && \
-    npm install --omit=dev vite@5.4.11 && \
-    npm cache clean --force && \
-    find . -type f -name "*.md" -delete
+# Stage 1b — install only production dependencies (minimal runtime deps)
+FROM dhi.io/node:26-dev AS prod-deps
 
-# Stage 2 — minimal runtime, no shell, no package manager
-FROM dhi.io/node:22-debian13
 WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install --only=production vite@5.4.11 && \
+    npm cache clean --force && \
+    find node_modules -type f -name "*.md" -delete
+
+# Stage 2 — distroless runtime (minimal, secure)
+FROM dhi.io/node:26
+
+WORKDIR /app
+
+# Copy built files from builder
 COPY --from=build /app/dist ./dist
-COPY --from=build /runtime ./
+
+# Copy production node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY vite.preview.config.js ./vite.config.js
 
 EXPOSE 4173
 
-# Exec form for proper signal handling
-ENTRYPOINT ["node", "--no-warnings", "./node_modules/.bin/vite"]
-CMD ["preview", "--host", "0.0.0.0", "--port", "4173"]
+# Use exec form for proper signal handling
+ENTRYPOINT ["node", "--no-warnings"]
+CMD ["./node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
