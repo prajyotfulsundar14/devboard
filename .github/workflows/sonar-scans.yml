@@ -1,0 +1,17 @@
+# Goal: sonargube scan for the backend code
+
+name: SonarQube Scan
+on:
+    workflow_call:
+jobs:
+    sonar-scans:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Code Checkout
+              uses: actions/checkout@v7
+
+            - name: SonarQube Scan
+              uses: sonarsource/sonarcloud-github-action@v8.2.0
+              env:
+                  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
