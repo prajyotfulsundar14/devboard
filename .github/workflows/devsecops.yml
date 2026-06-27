@@ -18,7 +18,7 @@ jobs:
 
     # Dependency Checks
     dependency-checks:
-        uses: ./.github/workflows/dependency-scan.yml
+        uses: ./.github/workflows/dependancy-scan.yml
 
     # Docker Checks
     docker-checks:
